@@ -93,7 +93,7 @@ int main(int argc, char *argv[]){
     char ip_and_port[30];
     sprintf(ip_and_port,"%s:%d\0",client_addr,sockaddr_client.sin_port);
 
-    printf("--------------------contacting client[%s:%d]---------------------------\n",client_addr,sockaddr_client.sin_port)
+    printf("--------------------contacting client[%s:%d]---------------------------\n",client_addr,sockaddr_client.sin_port);
 
     if(clientData->type==2){
       struct calcMessage * messa=(struct calcMessage*)recv_buf;
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]){
         errorReply.message=2;
         printf("server: client deceives to use another id\n");
 
-        send_num = sendto(sock_fd, &errorReply, sizeof(errorReply), 0, (struct sockaddr *)&addr_client, len); 
+        send_num = sendto(sock_fd, &errorReply, sizeof(errorReply), 0, (struct sockaddr *)&sockaddr_client, len); 
         if(send_num<0){
           perror("send error");
           printf("error: server can not send messages to client for unknown reason\n");
