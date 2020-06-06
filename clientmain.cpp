@@ -86,7 +86,7 @@ void send_protocol(int sig){
 	}
 }
 
-void init_alarm(void* method,struct itimerval& tmpAlarm){
+void init_alarm(__sighandler_t method,struct itimerval& tmpAlarm){
 	tmpAlarm.it_interval.tv_sec=0;
 	tmpAlarm.it_interval.tv_usec=100;
 	tmpAlarm.it_value.tv_sec=2;
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]){
 	server_len = sizeof(server_addr);
 
 	//创建客户端UDP套接字
-	printf("client: creating socket\n")
+	printf("client: creating socket\n");
 	if((socket_fd=socket(AF_INET, SOCK_DGRAM, 0))<0){
 		perror("socket creating error");  
 		printf("error: client can not create a socket\n");
@@ -123,7 +123,7 @@ int main(int argc, char *argv[]){
 	msg.major_version=1;
 	msg.minor_version=0;
 
-	send_protocol();
+	send_protocol(0);
 	init_alarm(send_protocol,protoTime);
 
 	//尝试接收来自服务端的回应
@@ -188,11 +188,11 @@ int main(int argc, char *argv[]){
 			result.flResult=fvalue1/fvalue2;
 			operation="fdiv";
 		}
-		printf("server: please answer question \"%s %lf %lf\"\n",operation,value1,value2);
+		printf("server: please answer question \"%s %lf %lf\"\n",operation,fvalue1,fvalue2);
 		printf("client: sending answer \"%lf\" to server\n",result.flResult);
 	}
 
-	send_answer();
+	send_answer(0);
 	init_alarm(send_answer,answerTime);
 
 	//尝试接收来自服务端的对自己计算答案正确与否的回应
@@ -208,7 +208,7 @@ int main(int argc, char *argv[]){
 	struct calcMessage *answerResponse=(struct calcMessage *)recv_buf;
 	if(answerResponse->message==1){
 		printf("server: OK\n");
-	}else(answerResponse->message==2){
+	}else if(answerResponse->message==2){
 		printf("server: Not OK\n");
 	}
 
