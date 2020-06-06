@@ -105,7 +105,7 @@ int main(int argc, char *argv[]){
         serverMessa.message=2;
         serverMessa.major_version=1;
         serverMessa.minor_version=0;
-        send_num = sendto(sock_fd, &serverMessa, sizeof(serverMessa), 0, (struct sockaddr *)&addr_client, len); 
+        send_num = sendto(sock_fd, &serverMessa, sizeof(serverMessa), 0, (struct sockaddr *)&sockaddr_client, len); 
         if(send_num<0){
           perror("send error");
           printf("error: server can not send messages to client for unknown reason\n");
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]){
         printf("server: support the protocol proposed by client\n");
 
         if(idMap.find(ip_and_port)!=idMap.end()){
-          printf("server: has already assign a question to client\n")
+          printf("server: has already assign a question to client\n");
           continue;
         }else{
           idMap[ip_and_port]=idCount;
@@ -126,7 +126,10 @@ int main(int argc, char *argv[]){
         struct calcProtocol serverProto;
         int arithType=randomType()+1;
         serverProto.arith=arithType;
-        serverProto.id=idMap[ip_and_port];
+
+        int id=idMap[ip_and_port];
+        serverProto.id=id;
+
         if(arithType<=4){
           int value1=randomInt(),value2=randomInt();
           serverProto.inValue1=value1;
