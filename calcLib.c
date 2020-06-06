@@ -38,7 +38,7 @@ int initCalcLib_seed(unsigned int seed){
   return(0);
 }
   
-int *randomType(void){
+int randomType(void){
   int Listitems=sizeof(arith)/(sizeof(char*)); 
   /* Figure out HOW many entries there are in the list.
      First we get the total size that the array of pointers use, sizeof(arith). Then we divide with 
@@ -50,7 +50,7 @@ int *randomType(void){
      
      Using that information, we just return the string found at that position arith[itemPos];
   */
-  return(itemPos);
+  return itemPos;
   
 };
 
