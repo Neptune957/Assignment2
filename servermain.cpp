@@ -18,6 +18,8 @@
 #include <calcLib.h>
 #include "protocol.h"
 
+using namespace std;
+
 #define PORT 4950
 #define MAXSIZE 200
 
@@ -53,7 +55,7 @@ int main(int argc, char *argv[]){
   server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   len = sizeof(server_addr); 
 
-  if(bind(sock_fd, (struct sockaddr *)&addr_serv, sizeof(addr_serv)) < 0)  {  
+  if(bind(sock_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0)  {  
     perror("socket bind address error");  
     printf("error: server can not bind the socket\n");
     exit(1);  
@@ -76,7 +78,7 @@ int main(int argc, char *argv[]){
   signal(SIGALRM, manageOutdatedClient);
 
   while(1){
-    memset(sockaddr_client,0,sizeof(sockaddr_client));
+    memset(&sockaddr_client,0,sizeof(sockaddr_client));
     recv_num = recvfrom(sock_fd, recv_buf, sizeof(recv_buf), 0, (struct sockaddr *)&sockaddr_client, (socklen_t *)&len);
     if(recv_num<0){
       perror("function recvfrom error");  
@@ -154,7 +156,7 @@ int main(int argc, char *argv[]){
         }
         timeMap[id]=time(0);
 
-        send_num = sendto(sock_fd, &serverProto, sizeof(serverProto), 0, (struct sockaddr *)&addr_client, len); 
+        send_num = sendto(sock_fd, &serverProto, sizeof(serverProto), 0, (struct sockaddr *)&sockaddr_client, len); 
         if(send_num<0){
           perror("send error");
           printf("error: server can not send messages to client for unknown reason\n");
@@ -199,7 +201,7 @@ int main(int argc, char *argv[]){
         printf("server: NOT OK, wrong answer\n");
       }
       idMap.erase(idMap.find(ip_and_port));
-      send_num = sendto(sock_fd, &ansReply, sizeof(ansReply), 0, (struct sockaddr *)&addr_client, len); 
+      send_num = sendto(sock_fd, &ansReply, sizeof(ansReply), 0, (struct sockaddr *)&sockaddr_client, len); 
       if(send_num<0){
         perror("send error");
         printf("error: server can not send messages to client for unknown reason\n");
