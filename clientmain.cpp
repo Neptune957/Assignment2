@@ -90,11 +90,12 @@ void send_protocol(int sig){
 		exit(1);
 	}else if(protoCount>0){
 		printf("client: message lost, resent the protocol for %d time",protoCount);
+	}else{
+		printf("client: sending message to server asking for protocol support\n");
 	}
 
 	protoCount++;	//更新重发次数
 
-	printf("client: sending message to server asking for protocol support\n");
 	if(isDeliberateMode&&randomInt()<=50){	//如果设置了故意不传输模式，则按照概率结果决定是否发送
 		return;
 	}
@@ -109,8 +110,8 @@ void send_protocol(int sig){
 }
 
 void init_alarm(__sighandler_t method,struct itimerval& tmpAlarm){
-	tmpAlarm.it_interval.tv_sec=0;
-	tmpAlarm.it_interval.tv_usec=100;
+	tmpAlarm.it_interval.tv_sec=2;
+	tmpAlarm.it_interval.tv_usec=0;
 	tmpAlarm.it_value.tv_sec=2;
 	tmpAlarm.it_value.tv_usec=0;
 	signal(SIGALRM,SIG_IGN);
@@ -123,7 +124,7 @@ int main(int argc, char *argv[]){
 	if (argc>3) {
 	  	printf("error: argument number wrong. dir: %s argument num: (%d)\n",argv[0],argc);
 	  	exit(1);
-	}else if(argc==2){
+	}else if(argc==3){
 		printf("client: open deliberate miss sending mode\n");
 		setDeliberateMissSendMode();
 	}

@@ -25,11 +25,6 @@ map<char*,int> idMap;   //记录从ip:port字符串到id的映射, 显然, ip:po
 time_t timeMap[1000];   //记录每个客户端id第一次与服务端通信的时间, 用来实现客户端超时未响应答案时移除任务
 double ansMap[1000];    //记录每个客户端id被分配的任务答案，用于跟客户端返回的结果比较
 
-bool isDeliberateMode=false;    /*因为正常情况下报文在本机网络中传输很难丢失，为了能够模拟出丢失的效果，在启动客户端时可以选择故意丢包模式（即在输入服务端地址后再输入参数0），也就是说假装发送欺骗客户端以为
-                                *自己发送了所支持的协议信息或者计算答案，然后等待服务端的响应。显而易见，因为根本没发送出去，服务端一定不会响应，所以才能够触发客户端的重发
-                                *机制。原理是在每次发送的时候进行一个随机数概率判定（1/2的概率不发送） 
-                                */
-
 //被定时器对应的信号处理器每隔1秒调用一次
 void manageOutdatedClient(int signum){
   time_t now=time(0);
@@ -39,11 +34,6 @@ void manageOutdatedClient(int signum){
       idMap.erase(it);
     }
   }
-}
-
-void setDeliberateMissSendMode(){
-  initCalcLib();
-  isDeliberateMode=true;
 }
 
 int main(int argc, char *argv[]){
@@ -82,8 +72,8 @@ int main(int argc, char *argv[]){
   initCalcLib();    //在调用外教提供的指令生成包前必须调用他提供的初始化函数
 
   struct itimerval alarm;   //这个定时器是用来每秒比较是否有客户端超过10秒没返回答案
-  alarm.it_interval.tv_sec=0;
-  alarm.it_interval.tv_usec=100;
+  alarm.it_interval.tv_sec=1;
+  alarm.it_interval.tv_usec=;
   alarm.it_value.tv_sec=1;
   alarm.it_value.tv_usec=0;
   setitimer(ITIMER_REAL,&alarm,NULL);   //设置定时器
@@ -170,7 +160,7 @@ int main(int argc, char *argv[]){
           }else{
             ansMap[id]=fvalue1/fvalue2;
           }
-          printf("server: going to send question \"%s %d %d\" to client\n",getRandomTypeName(arithType-1),fvalue1,fvalue2);
+          printf("server: going to send question \"%s %f %f\" to client\n",getRandomTypeName(arithType-1),fvalue1,fvalue2);
         }
         timeMap[id]=time(0);    //记录任务开始时间，如果客户端未在10秒内返回结果，则终止任务
 
