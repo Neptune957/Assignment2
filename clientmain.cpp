@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-/* You will to add includes here */ 
 #include <string.h>   
 #include <errno.h>    
 #include <signal.h>
@@ -9,20 +8,21 @@
 #include <sys/socket.h>   
 #include <sys/time.h>
 #include <netinet/in.h>   
-#include <arpa/inet.h>  
+#include <arpa/inet.h> 
+#include <ctime> 
 
-
-// Included to get the support library
 #include <calcLib.h>
 #include "protocol.h"
 
-#define PORT 4950
-#define MAXSIZE 200
+using namespace std;
 
-int protoCount=0;
-int answerCount=0;
-bool isProto=false;
-bool isAnswer=false;
+#define PORT 4950
+#define MAXSIZE 200		//定义buffer数组长度
+
+int protoCount=0;		//记录重发所支持的传输协议的次数，如果超过三次，则放弃并打印错误信息
+int answerCount=0;		//记录重发计算结果的次数，如果超过三次，则放弃并打印错误信息
+bool isProto=false;		//标记服务端是否已经返回了对自己所支持的协议的回应，如果没有，则继续重发直到三次用完
+bool isAnswer=false;	//标记服务端是否已经返回了对自己计算答案的回应，如果没有，则继续重发直到三次用完
 
 int socket_fd;	//客户端套接字id
 struct sockaddr_in server_addr;	//服务端地址信息
@@ -32,11 +32,21 @@ int recv_num;	//统计发送给服务端的字节数
 char send_buf[MAXSIZE];		//存储发送信息的数组
 char recv_buf[MAXSIZE];		//存储接收到的信息的数组
 int id;	//服务端赋予客户端的唯一标识符
-struct calcProtocol result;
-struct calcMessage msg;
+struct calcProtocol result;		//存储题目的答案准备发送给服务端
+struct calcMessage msg;			//存储客户端支持的协议信息
 
-struct itimerval protoTime;
-struct itimerval answerTime;
+struct itimerval protoTime;		//用于设置重发协议请求的定时器
+struct itimerval answerTime;	//用于设置重发答案的定时器
+
+bool isDeliberateMode=false;    /*因为正常情况下报文在本机网络中传输很难丢失，为了能够模拟出丢失的效果，在启动客户端时可以选择故意丢包模式（即在输入服务端地址后再输入参数0），也就是说假装发送欺骗客户端以为
+                                *自己发送了所支持的协议信息或者计算答案，然后等待服务端的响应。显而易见，因为根本没发送出去，服务端一定不会响应，所以才能够触发客户端的重发
+                                *机制。原理是在每次发送的时候进行一个随机数概率判定（1/2的概率不发送） 
+                                */
+
+void setDeliberateMissSendMode(){
+  initCalcLib();
+  isDeliberateMode=true;
+}
 
 void delete_alarm(struct itimerval& tmp){
 	tmp.it_value.tv_sec=0;
@@ -45,16 +55,22 @@ void delete_alarm(struct itimerval& tmp){
 }
 
 void send_answer(int sig){
-	if(isAnswer){
+	if(isAnswer){	//如果客户端已经收到来自服务端的答案响应的话，则终止重发
 		delete_alarm(answerTime);
 		return;
 	}
-	if(answerCount>3){
+	if(answerCount>3){	//如果重发答案超过三次，则结束
 		printf("client: has resent answer for 3 times without any response so terminate the program.\n");
 		exit(1);
+	}else if(answerCount>0){
+		printf("client: message lost, resent the answer for %d time",answerCount);
 	}
-	answerCount++;
 
+	answerCount++;	//更新重发次数
+
+	if(isDeliberateMode&&randomInt()<=50){	//如果设置了故意不传输模式，则按照概率结果决定是否发送
+		return;
+	}
 	//发送计算题答案给服务端
 	send_num=sendto(socket_fd,&result,sizeof(result),0,(struct sockaddr*)&server_addr,server_len);
 	if(send_num<0){
@@ -65,18 +81,24 @@ void send_answer(int sig){
 }
 
 void send_protocol(int sig){
-	//创建客户端第一次要发送的数据包内容初始化它
-	if(isProto){
+	if(isProto){	//如果客户端已经收到来自服务端的协议响应的话，则终止重发
 		delete_alarm(protoTime);
 		return;
 	}
-	if(protoCount>3){
+	if(protoCount>3){	//如果重发协议超过三次，则结束
 		printf("client: has resent protocol requirement for 3 times without any response so terminate the program.\n");
 		exit(1);
+	}else if(protoCount>0){
+		printf("client: message lost, resent the protocol for %d time",protoCount);
 	}
-	protoCount++;
 
-	printf("client: sending first message to server asking for protocol support\n");
+	protoCount++;	//更新重发次数
+
+	printf("client: sending message to server asking for protocol support\n");
+	if(isDeliberateMode&&randomInt()<=50){	//如果设置了故意不传输模式，则按照概率结果决定是否发送
+		return;
+	}
+
 	//发送第一次消息给服务端
 	send_num=sendto(socket_fd,&msg,sizeof(msg),0,(struct sockaddr*)&server_addr,server_len);
 	if(send_num<0){
@@ -98,9 +120,12 @@ void init_alarm(__sighandler_t method,struct itimerval& tmpAlarm){
 
 int main(int argc, char *argv[]){
 	//判断输入参数数量正确与否
-	if (argc != 2) {
+	if (argc>3) {
 	  	printf("error: argument number wrong. dir: %s argument num: (%d)\n",argv[0],argc);
 	  	exit(1);
+	}else if(argc==2){
+		printf("client: open deliberate miss sending mode\n");
+		setDeliberateMissSendMode();
 	}
 
 	memset(&server_addr, 0, sizeof(server_addr));	//初始化服务地址信息，以免受到之前存过的东西影响	
