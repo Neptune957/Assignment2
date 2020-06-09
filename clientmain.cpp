@@ -38,14 +38,22 @@ struct calcMessage msg;			//存储客户端支持的协议信息
 struct itimerval protoTime;		//用于设置重发协议请求的定时器
 struct itimerval answerTime;	//用于设置重发答案的定时器
 
-bool isDeliberateMode=false;    /*因为正常情况下报文在本机网络中传输很难丢失，为了能够模拟出丢失的效果，在启动客户端时可以选择故意丢包模式（即在输入服务端地址后再输入参数0），也就是说假装发送欺骗客户端以为
+bool isProtocolLost=false;    /*因为正常情况下报文在本机网络中传输很难丢失，为了能够模拟出丢失的效果，在启动客户端时可以选择故意丢包模式（即在输入服务端地址后再输入参数0），也就是说假装发送欺骗客户端以为
                                 *自己发送了所支持的协议信息或者计算答案，然后等待服务端的响应。显而易见，因为根本没发送出去，服务端一定不会响应，所以才能够触发客户端的重发
                                 *机制。原理是在每次发送的时候进行一个随机数概率判定（1/2的概率不发送） 
                                 */
+bool isAnswerLost=false;
+bool isDeceiveId=false;
 
-void setDeliberateMissSendMode(){
+void setDeliberateMissSendMode(int mode){
   initCalcLib();
-  isDeliberateMode=true;
+  if(mode==0){
+  	isProtocolLost=true;
+  }else if(mode==1){
+  	isAnswerLost=true;
+  }else if(mode==2){
+  	isDeceiveId=true;
+  }
 }
 
 void delete_alarm(struct itimerval& tmp){
@@ -68,7 +76,7 @@ void send_answer(int sig){
 
 	answerCount++;	//更新重发次数
 
-	if(isDeliberateMode&&randomInt()<=50){	//如果设置了故意不传输模式，则按照概率结果决定是否发送
+	if(isAnswerLost&&randomInt()<=50){	//如果设置了故意不传输模式，则按照概率结果决定是否发送
 		return;
 	}
 	//发送计算题答案给服务端
@@ -96,7 +104,7 @@ void send_protocol(int sig){
 
 	protoCount++;	//更新重发次数
 
-	if(isDeliberateMode&&randomInt()<=50){	//如果设置了故意不传输模式，则按照概率结果决定是否发送
+	if(isProtocolLost&&randomInt()<=50){	//如果设置了故意不传输模式，则按照概率结果决定是否发送
 		return;
 	}
 
@@ -126,7 +134,13 @@ int main(int argc, char *argv[]){
 	  	exit(1);
 	}else if(argc==3){
 		printf("client: open deliberate miss sending mode\n");
-		setDeliberateMissSendMode();
+		if(strcmp(argv[2],"0")==0){
+			setDeliberateMissSendMode(0);
+		}else if(strcmp(argv[2],"1")==0){
+			setDeliberateMissSendMode(1);
+		}else if(strcmp(argv[2],"2")==0){
+			setDeliberateMissSendMode(2);
+		}
 	}
 
 	memset(&server_addr, 0, sizeof(server_addr));	//初始化服务地址信息，以免受到之前存过的东西影响	
@@ -174,7 +188,11 @@ int main(int argc, char *argv[]){
 	result.type=2;
 	result.major_version=1;
 	result.minor_version=0;
-	result.id=id;
+	if(isDeceiveId){
+		result.id=0;
+	}else{
+		result.id=id;
+	}
 	result.arith=arith;
 
 	char *operation;
