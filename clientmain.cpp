@@ -63,7 +63,7 @@ void send_answer(int sig){
 		printf("client: has resent answer for 3 times without any response so terminate the program.\n");
 		exit(1);
 	}else if(answerCount>0){
-		printf("client: message lost, resent the answer for %d time",answerCount);
+		printf("client: message lost, resent the answer for %d time\n",answerCount);
 	}
 
 	answerCount++;	//更新重发次数
@@ -89,7 +89,7 @@ void send_protocol(int sig){
 		printf("client: has resent protocol requirement for 3 times without any response so terminate the program.\n");
 		exit(1);
 	}else if(protoCount>0){
-		printf("client: message lost, resent the protocol for %d time",protoCount);
+		printf("client: message lost, resent the protocol for %d time\n",protoCount);
 	}else{
 		printf("client: sending message to server asking for protocol support\n");
 	}

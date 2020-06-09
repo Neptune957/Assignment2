@@ -28,11 +28,13 @@ double ansMap[1000];    //记录每个客户端id被分配的任务答案，用�
 //被定时器对应的信号处理器每隔1秒调用一次
 void manageOutdatedClient(int signum){
   time_t now=time(0);
-  for(map<char*,int>::iterator it=idMap.begin();it!=idMap.end();it++){  //每次调用遍历所有当前被分配任务但还未失效的客户端id
+  for(map<char*,int>::iterator it=idMap.begin();it!=idMap.end();){  //每次调用遍历所有当前被分配任务但还未失效的客户端id
     if(now-timeMap[it->second]>10){   //如果当前时间距离客户端被分配任务的时间已经过去了十秒，即这10秒内服务端没有收到客户端答案，则服务端会抹去分配到任务和客户端id
       printf("server: client[%s] does not respond with answer in 10 seconds, so abort its job\n",it->first);
-      idMap.erase(it);
+      idMap.erase(it++);
+      continue;
     }
+    it++;
   }
 }
 
@@ -73,7 +75,7 @@ int main(int argc, char *argv[]){
 
   struct itimerval alarm;   //这个定时器是用来每秒比较是否有客户端超过10秒没返回答案
   alarm.it_interval.tv_sec=1;
-  alarm.it_interval.tv_usec=;
+  alarm.it_interval.tv_usec=0;
   alarm.it_value.tv_sec=1;
   alarm.it_value.tv_usec=0;
   setitimer(ITIMER_REAL,&alarm,NULL);   //设置定时器
