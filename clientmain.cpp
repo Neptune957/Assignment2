@@ -251,9 +251,13 @@ int main(int argc, char *argv[]){
 
 	struct calcMessage *answerResponse=(struct calcMessage *)recv_buf;
 	if(answerResponse->message==1){
-		printf("server: OK\n");
+		printf("server: Answer is OK\n");
 	}else if(answerResponse->message==2){
-		printf("server: Not OK\n");
+		if(answerResponse->type==3){
+			printf("server: wrong ID! You can not deceive with ID!\n");
+		}else{
+			printf("server: Answer is Not OK\n");
+		}
 	}
 
 	close(socket_fd);	//任务完成，关闭连接
