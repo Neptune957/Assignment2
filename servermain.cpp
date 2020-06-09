@@ -120,10 +120,7 @@ int main(int argc, char *argv[]){
       }else{
         printf("server: support the protocol proposed by client\n");
 
-        if(idMap.find(ip_and_port)!=idMap.end()){   //如果这是该客户端最近第一次访问服务端，则给他分配一个id标识符
-          printf("server: has already assign a question to client\n");
-          continue;
-        }else{
+        if(idMap.find(ip_and_port)==idMap.end()){   //如果这是该客户端最近第一次访问服务端，则给他分配一个id标识符
           idMap[ip_and_port]=idCount;
           idCount++;
         }
